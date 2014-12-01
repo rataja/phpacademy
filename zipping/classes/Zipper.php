@@ -6,6 +6,8 @@ class Zipper
     private $_files = array();
     private $_zip;
 
+    const DEBUG = true;
+
     public function __construct()
     {
         $this->_zip = new ZipArchive;
@@ -20,36 +22,51 @@ class Zipper
         {
             $this->_files[] = $input;
         }
-        var_dump($this->_files);
     }
 
     public function store($location = null)
     {
-        if (count($this->_files) && $location)
+        $this->cleanUnexistingFiles();
+        if (!count($this->_files))
         {
-            foreach ($this->_files as $index => $file)
-            {
-                if (!file_exists($file))
-                {
-                    unset($this->_files[$index]);
-                }
-            }
+            throw new Exception('Zip archive can not be empty. Add some files');
+        }
+        if (!$location)
+        {
+            throw new Exception('Location of zip archive must be set');
         }
 
         if ($this->_zip->open($location, file_exists($location) ? ZipArchive::OVERWRITE : ZipArchive::CREATE))
         {
             foreach ($this->_files as $filename)
             {
+                if (self::DEBUG)
+                {
+                    echo 'Adding file: ' . $filename . '<br>';
+                }
                 $this->_zip->addFile($filename);
+            }
+            if (self::DEBUG)
+            {
+                echo 'Archive file: ' . $location . ' has been created<br>';
             }
             $this->_zip->close();
         }
-        //echo '<pre>', print_r($this->_files), '</pre>';
     }
 
-    private function checkExistingArchive($location = null)
+    private function cleanUnexistingFiles()
     {
-        return file_exists($location) ? ZipArchive::OVERWRITE : ZipArchive::CREATE;
+        foreach ($this->_files as $index => $file)
+        {
+            if (!file_exists($file))
+            {
+                if (self::DEBUG)
+                {
+                    echo 'Removing unexisting file: ' . $file . '<br>';
+                }
+                unset($this->_files[$index]);
+            }
+        }
     }
 
 }
